@@ -23,7 +23,8 @@ public class Broadcast {
                 return;
             }
 
-            String mensajeInicial = "[Cliente A] Hola, estoy conectado: " + InetAddress.getLocalHost().getHostAddress();
+            String direccionIP = obtenerDireccionIP();
+            String mensajeInicial = "[Cliente " + direccionIP + "] Hola, estoy conectado: " + direccionIP;
             byte[] buffer = mensajeInicial.getBytes();
 
             DatagramPacket paquete = new DatagramPacket(buffer, buffer.length, broadcastAddress, PUERTO);
@@ -46,12 +47,13 @@ public class Broadcast {
                 return;
             }
 
-            System.out.println("[Cliente A] Escribe tus mensajes (escribe 'salir' para terminar):");
+            String direccionIP = obtenerDireccionIP();
+            System.out.println("[Cliente " + direccionIP + "] Escribe tus mensajes (escribe 'salir' para terminar):");
             while (true) {
                 String mensaje = scanner.nextLine();
                 if (mensaje.equalsIgnoreCase("salir")) break;
 
-                mensaje = "[Cliente A] " + InetAddress.getLocalHost().getHostAddress() + ": " + mensaje;
+                mensaje = "[Cliente " + direccionIP + "] " + mensaje;
                 byte[] buffer = mensaje.getBytes();
                 DatagramPacket paquete = new DatagramPacket(buffer, buffer.length, broadcastAddress, PUERTO);
                 socket.send(paquete);
@@ -65,13 +67,17 @@ public class Broadcast {
     private static void recibirMensajes() {
         try (DatagramSocket socket = new DatagramSocket(PUERTO)) {
             byte[] buffer = new byte[1024];
-            System.out.println("[Cliente A] Escuchando mensajes de la red...");
+            System.out.println("[Cliente] Escuchando mensajes de la red...");
 
             while (true) {
                 DatagramPacket paquete = new DatagramPacket(buffer, buffer.length);
                 socket.receive(paquete);
                 String mensaje = new String(paquete.getData(), 0, paquete.getLength());
-                System.out.println(mensaje);
+
+                // No mostrar los mensajes enviados por el propio equipo
+                if (!paquete.getAddress().equals(InetAddress.getLocalHost())) {
+                    System.out.println(mensaje);
+                }
             }
 
         } catch (Exception e) {
@@ -85,13 +91,16 @@ public class Broadcast {
             while (interfaces.hasMoreElements()) {
                 NetworkInterface ni = interfaces.nextElement();
 
-                if (ni.isLoopback() || !ni.isUp()) {
-                    continue;
+                if (ni.isLoopback() || !ni.isUp() || ni.getDisplayName().contains("Virtual")) {
+                    continue; // Saltar interfaces virtuales o inactivas
                 }
 
                 for (InterfaceAddress interfaceAddress : ni.getInterfaceAddresses()) {
                     InetAddress broadcast = interfaceAddress.getBroadcast();
-                    if (broadcast != null) {
+                    InetAddress address = interfaceAddress.getAddress();
+
+                    // Solo devolver direcciones del rango privado (LAN)
+                    if (broadcast != null && address.isSiteLocalAddress()) {
                         return broadcast;
                     }
                 }
@@ -100,5 +109,28 @@ public class Broadcast {
             e.printStackTrace();
         }
         return null;
+    }
+
+    private static String obtenerDireccionIP() {
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface ni = interfaces.nextElement();
+
+                if (ni.isLoopback() || !ni.isUp() || ni.getDisplayName().contains("Virtual")) {
+                    continue; // Saltar interfaces virtuales o inactivas
+                }
+
+                for (InterfaceAddress interfaceAddress : ni.getInterfaceAddresses()) {
+                    InetAddress address = interfaceAddress.getAddress();
+                    if (address.isSiteLocalAddress()) {
+                        return address.getHostAddress();
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "Desconocida";
     }
 }
