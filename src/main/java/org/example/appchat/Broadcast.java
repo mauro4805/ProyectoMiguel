@@ -8,15 +8,25 @@ public class Broadcast {
     private static final int PUERTO = 9876;
 
     public static void main(String[] args) {
-        new Thread(Broadcast::recibirMensajes).start();
-        enviarMensajeInicial();
-        enviarMensajes();
-    }
-
-    private static void enviarMensajeInicial() {
         try (DatagramSocket socket = new DatagramSocket()) {
             socket.setBroadcast(true);
 
+            // Iniciar el hilo para recibir mensajes
+            new Thread(() -> recibirMensajes(socket)).start();
+
+            // Enviar mensaje de conexión
+            enviarMensajeInicial(socket);
+
+            // Permitir enviar mensajes
+            enviarMensajes(socket);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void enviarMensajeInicial(DatagramSocket socket) {
+        try {
             InetAddress broadcastAddress = obtenerDireccionBroadcast();
             if (broadcastAddress == null) {
                 System.out.println("No se pudo obtener la dirección de broadcast.");
@@ -35,11 +45,9 @@ public class Broadcast {
         }
     }
 
-    private static void enviarMensajes() {
-        try (DatagramSocket socket = new DatagramSocket()) {
-            socket.setBroadcast(true);
+    private static void enviarMensajes(DatagramSocket socket) {
+        try {
             Scanner scanner = new Scanner(System.in);
-
             InetAddress broadcastAddress = obtenerDireccionBroadcast();
 
             if (broadcastAddress == null) {
@@ -49,6 +57,7 @@ public class Broadcast {
 
             String direccionIP = obtenerDireccionIP();
             System.out.println("[Cliente " + direccionIP + "] Escribe tus mensajes (escribe 'salir' para terminar):");
+
             while (true) {
                 String mensaje = scanner.nextLine();
                 if (mensaje.equalsIgnoreCase("salir")) break;
@@ -64,8 +73,8 @@ public class Broadcast {
         }
     }
 
-    private static void recibirMensajes() {
-        try (DatagramSocket socket = new DatagramSocket(PUERTO)) {
+    private static void recibirMensajes(DatagramSocket socket) {
+        try {
             byte[] buffer = new byte[1024];
             System.out.println("[Cliente] Escuchando mensajes de la red...");
 
