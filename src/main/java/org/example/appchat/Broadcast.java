@@ -8,66 +8,50 @@ public class Broadcast {
     private static final int PUERTO = 9876;
 
     public static void main(String[] args) {
-        try (DatagramSocket socket = new DatagramSocket()) {
+        try {
+            DatagramSocket socket = new DatagramSocket();
             socket.setBroadcast(true);
 
-            // Iniciar el hilo para recibir mensajes
+            InetAddress broadcastAddress = obtenerDireccionBroadcast();
+            if (broadcastAddress == null) {
+                System.out.println("No se pudo obtener la dirección de broadcast.");
+                return;
+            }
+
+            String direccionIP = obtenerDireccionIP();
+
+            // Iniciar hilo para recibir mensajes
             new Thread(() -> recibirMensajes(socket)).start();
 
-            // Enviar mensaje de conexión
-            enviarMensajeInicial(socket);
+            // Enviar mensaje inicial
+            enviarMensaje(socket, broadcastAddress, "[Cliente " + direccionIP + "] Hola, estoy conectado: " + direccionIP);
 
-            // Permitir enviar mensajes
-            enviarMensajes(socket);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private static void enviarMensajeInicial(DatagramSocket socket) {
-        try {
-            InetAddress broadcastAddress = obtenerDireccionBroadcast();
-            if (broadcastAddress == null) {
-                System.out.println("No se pudo obtener la dirección de broadcast.");
-                return;
-            }
-
-            String direccionIP = obtenerDireccionIP();
-            String mensajeInicial = "[Cliente " + direccionIP + "] Hola, estoy conectado: " + direccionIP;
-            byte[] buffer = mensajeInicial.getBytes();
-
-            DatagramPacket paquete = new DatagramPacket(buffer, buffer.length, broadcastAddress, PUERTO);
-            socket.send(paquete);
+            // Enviar mensajes desde la consola
+            enviarMensajes(socket, broadcastAddress, direccionIP);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private static void enviarMensajes(DatagramSocket socket) {
-        try {
-            Scanner scanner = new Scanner(System.in);
-            InetAddress broadcastAddress = obtenerDireccionBroadcast();
-
-            if (broadcastAddress == null) {
-                System.out.println("No se pudo obtener la dirección de broadcast.");
-                return;
-            }
-
-            String direccionIP = obtenerDireccionIP();
+    private static void enviarMensajes(DatagramSocket socket, InetAddress broadcastAddress, String direccionIP) {
+        try (Scanner scanner = new Scanner(System.in)) {
             System.out.println("[Cliente " + direccionIP + "] Escribe tus mensajes (escribe 'salir' para terminar):");
-
             while (true) {
                 String mensaje = scanner.nextLine();
                 if (mensaje.equalsIgnoreCase("salir")) break;
-
-                mensaje = "[Cliente " + direccionIP + "] " + mensaje;
-                byte[] buffer = mensaje.getBytes();
-                DatagramPacket paquete = new DatagramPacket(buffer, buffer.length, broadcastAddress, PUERTO);
-                socket.send(paquete);
+                enviarMensaje(socket, broadcastAddress, "[Cliente " + direccionIP + "] " + mensaje);
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
+    private static void enviarMensaje(DatagramSocket socket, InetAddress broadcastAddress, String mensaje) {
+        try {
+            byte[] buffer = mensaje.getBytes();
+            DatagramPacket paquete = new DatagramPacket(buffer, buffer.length, broadcastAddress, PUERTO);
+            socket.send(paquete);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -88,7 +72,6 @@ public class Broadcast {
                     System.out.println(mensaje);
                 }
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -108,7 +91,6 @@ public class Broadcast {
                     InetAddress broadcast = interfaceAddress.getBroadcast();
                     InetAddress address = interfaceAddress.getAddress();
 
-                    // Solo devolver direcciones del rango privado (LAN)
                     if (broadcast != null && address.isSiteLocalAddress()) {
                         return broadcast;
                     }
