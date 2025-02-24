@@ -40,6 +40,7 @@ public class Broadcast {
             while (true) {
                 String mensaje = scanner.nextLine();
                 if (mensaje.equalsIgnoreCase("salir")) break;
+                System.out.println("[Enviando] " + mensaje);
                 enviarMensaje(socket, broadcastAddress, "[Cliente " + direccionIP + "] " + mensaje);
             }
         } catch (Exception e) {
@@ -52,6 +53,7 @@ public class Broadcast {
             byte[] buffer = mensaje.getBytes();
             DatagramPacket paquete = new DatagramPacket(buffer, buffer.length, broadcastAddress, PUERTO);
             socket.send(paquete);
+            System.out.println("[Enviado] " + mensaje);  // Confirmación de mensaje enviado
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -62,14 +64,20 @@ public class Broadcast {
             byte[] buffer = new byte[1024];
             System.out.println("[Cliente] Escuchando mensajes de la red...");
 
-            while (true) {
-                DatagramPacket paquete = new DatagramPacket(buffer, buffer.length);
-                socket.receive(paquete);
-                String mensaje = new String(paquete.getData(), 0, paquete.getLength());
+            socket.setSoTimeout(1000); // Establecer un tiempo de espera para evitar bloqueos indefinidos.
 
-                // No mostrar los mensajes enviados por el propio equipo
-                if (!paquete.getAddress().equals(InetAddress.getLocalHost())) {
-                    System.out.println(mensaje);
+            while (true) {
+                try {
+                    DatagramPacket paquete = new DatagramPacket(buffer, buffer.length);
+                    socket.receive(paquete);  // Recibe el mensaje
+                    String mensaje = new String(paquete.getData(), 0, paquete.getLength());
+
+                    // No mostrar los mensajes enviados por el propio equipo
+                    if (!paquete.getAddress().equals(InetAddress.getLocalHost())) {
+                        System.out.println("[Recibido] " + mensaje);
+                    }
+                } catch (SocketTimeoutException e) {
+                    // No hacer nada si no hay mensaje recibido.
                 }
             }
         } catch (Exception e) {
@@ -92,6 +100,7 @@ public class Broadcast {
                     InetAddress address = interfaceAddress.getAddress();
 
                     if (broadcast != null && address.isSiteLocalAddress()) {
+                        System.out.println("Dirección de Broadcast encontrada: " + broadcast);
                         return broadcast;
                     }
                 }
