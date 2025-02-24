@@ -1,0 +1,38 @@
+/* Tema oscuro */
+.root {
+    -fx-base: #2e2e2e;
+    -fx-background: #2e2e2e;
+    -fx-text-fill: white;
+}
+
+.label {
+    -fx-text-fill: white;
+}
+
+.text-area, .text-field {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: white;
+    -fx-border-color: #555;
+}
+
+.list-view {
+    -fx-background-color: #3c3f41;
+    -fx-text-fill: white;
+    -fx-border-color: #555;
+}
+
+.button {
+    -fx-background-color: #444;
+    -fx-text-fill: white;
+    -fx-border-color: #555;
+}
+
+.hbox, .vbox {
+    -fx-background-color: #2e2e2e;
+}
+
+/* Estilos adicionales para interactividad */
+.label:hover, .button:hover {
+    -fx-text-fill: #61afef;
+    -fx-background-color: #444;
+}
