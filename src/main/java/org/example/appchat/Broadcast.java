@@ -99,8 +99,9 @@ public class Broadcast {
                     InetAddress broadcast = interfaceAddress.getBroadcast();
                     InetAddress address = interfaceAddress.getAddress();
 
+                    // Verificamos si la dirección de broadcast es válida
                     if (broadcast != null && address.isSiteLocalAddress()) {
-                        System.out.println("Dirección de Broadcast encontrada: " + broadcast);
+                        System.out.println("Dirección de Broadcast encontrada: " + broadcast.getHostAddress());
                         return broadcast;
                     }
                 }
@@ -110,6 +111,7 @@ public class Broadcast {
         }
         return null;
     }
+
 
     private static String obtenerDireccionIP() {
         try {
